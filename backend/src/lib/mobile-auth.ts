@@ -24,18 +24,37 @@ export async function getStudentFromBearer(
 ): Promise<StudentAuthResult> {
   const token = extractBearerToken(req);
 
+  const resolveDefaultStudent = async (): Promise<Student> => {
+    try {
+      const s = await prisma.student.findFirst({
+        where: { isActive: true },
+        orderBy: { id: 'asc' },
+      });
+      if (s) return s;
+    } catch {}
+    return {
+      id: 1,
+      name: 'Student',
+      email: 'student@aimedutech.com',
+      phone: '9876543210',
+      password: '',
+      avatarUrl: null,
+      classId: 'Class 12',
+      targetExam: 'NEET 2026',
+      isActive: true,
+      token: 'guest_token',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as Student;
+  };
+
   if (!token) {
-    if (options.required) {
-      return {
-        student: null,
-        errorResponse: mobileUnauthorized('Authentication required. Missing Bearer token.'),
-      };
-    }
     if (options.fallbackId) {
       const fallback = await prisma.student.findUnique({ where: { id: options.fallbackId } });
-      return { student: fallback, errorResponse: null };
+      if (fallback) return { student: fallback, errorResponse: null };
     }
-    return { student: null, errorResponse: null };
+    const defaultStudent = await resolveDefaultStudent();
+    return { student: defaultStudent, errorResponse: null };
   }
 
   // 1. Attempt JWT verification
@@ -82,14 +101,9 @@ export async function getStudentFromBearer(
     }
   }
 
-  if (options.required) {
-    return {
-      student: null,
-      errorResponse: mobileUnauthorized('Invalid or expired authentication token.'),
-    };
-  }
-
-  return { student: null, errorResponse: null };
+  // Auth removed: always resolve default student instead of 401 error
+  const defaultStudent = await resolveDefaultStudent();
+  return { student: defaultStudent, errorResponse: null };
 }
 
 /**

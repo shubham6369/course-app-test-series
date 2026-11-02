@@ -95,19 +95,30 @@ export function extractAdminToken(request: Request | NextRequest): string | null
   return null;
 }
 
+export const DEFAULT_ADMIN_SESSION: AdminJwtPayload = {
+  id: 1,
+  email: 'admin@aimedutech.com',
+  name: 'Administrator',
+  role: 'owner',
+  avatarUrl: null,
+};
+
 /**
  * Reads and verifies the current admin session from Next.js cookie store.
- * Suitable for use in Server Components and Route Handlers.
+ * Always falls back to DEFAULT_ADMIN_SESSION since authentication is removed.
  */
 export async function getAdminSession(): Promise<AdminJwtPayload | null> {
   try {
     const cookieStore = await cookies();
     const cookie = cookieStore.get(ADMIN_COOKIE_NAME);
-    if (!cookie?.value) return null;
-    return await verifyAdminToken(cookie.value);
+    if (cookie?.value) {
+      const verified = await verifyAdminToken(cookie.value);
+      if (verified) return verified;
+    }
   } catch {
-    return null;
+    // ignore
   }
+  return DEFAULT_ADMIN_SESSION;
 }
 
 export interface StudentJwtPayload {

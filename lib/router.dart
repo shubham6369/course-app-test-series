@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import 'models/models.dart';
 import 'screens/auth/forgot_password_screen.dart';
@@ -44,12 +43,7 @@ class AppRouter {
   static final GlobalKey<NavigatorState> shellNavigatorKey =
       GlobalKey<NavigatorState>(debugLabel: 'shell');
 
-  static AuthProvider? _authOverride;
-
-  /// Allows setting an AuthProvider override for tests
-  static void setAuthOverride(AuthProvider? auth) {
-    _authOverride = auth;
-  }
+  static void setAuthOverride(AuthProvider? auth) {}
 
   static final GoRouter router = GoRouter(
     navigatorKey: rootNavigatorKey,
@@ -387,34 +381,15 @@ class AppRouter {
       ),
     ],
     redirect: (context, state) {
-      AuthProvider? auth = _authOverride;
-      if (auth == null) {
-        try {
-          auth = Provider.of<AuthProvider>(context, listen: false);
-        } catch (_) {}
-      }
-
-      final isAuthenticated = auth?.isAuthenticated ?? false;
       final matchedLocation = state.matchedLocation;
 
       final isAuthFlow = matchedLocation == '/login' ||
           matchedLocation == '/register' ||
           matchedLocation == '/forgot-password';
 
-      // If already authenticated and trying to access login/register/forgot-password,
-      // redirect them straight to home.
-      if (isAuthenticated && isAuthFlow) {
+      // Authentication removed: redirect auth screens straight to home dashboard
+      if (isAuthFlow) {
         return '/home';
-      }
-
-      // Protected routes requiring authentication
-      final protectedRoutes = [
-        '/edit-profile',
-        '/my-courses',
-      ];
-
-      if (!isAuthenticated && protectedRoutes.contains(matchedLocation)) {
-        return '/login';
       }
 
       return null;

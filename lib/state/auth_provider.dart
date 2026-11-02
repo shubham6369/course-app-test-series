@@ -11,14 +11,24 @@ class AuthProvider extends ChangeNotifier {
   static const String tokenKey = 'auth_token';
   static const String userProfileKey = 'user_profile';
 
+  static final Student defaultStudent = Student(
+    id: 1,
+    name: 'Student',
+    email: 'student@aimedutech.com',
+    phone: '9876543210',
+    avatarUrl: null,
+    classId: 'Class 12',
+    targetExam: 'NEET 2026',
+  );
+
   final ApiService _apiService;
   SharedPreferences? _prefs;
 
-  Student? _currentUser;
-  String? _token;
+  Student? _currentUser = defaultStudent;
+  String? _token = 'guest_token';
   bool _isLoading = false;
   String? _errorMessage;
-  bool _isInitialized = false;
+  bool _isInitialized = true;
 
   AuthProvider({
     ApiService? apiService,
@@ -96,16 +106,15 @@ class AuthProvider extends ChangeNotifier {
           _currentUser = Student.fromJson(userMap);
         } catch (e) {
           debugPrint('Error decoding stored profile: $e');
-          _currentUser = null;
-          _token = null;
-          ApiConfig.authToken = null;
-          await prefs.remove(tokenKey);
-          await prefs.remove(userProfileKey);
+          _currentUser = defaultStudent;
+          _token = 'guest_token';
+          ApiConfig.authToken = 'guest_token';
         }
       } else {
-        _token = null;
-        _currentUser = null;
-        ApiConfig.authToken = null;
+        // Authentication removed: automatically provide default student session
+        _currentUser = defaultStudent;
+        _token = 'guest_token';
+        ApiConfig.authToken = 'guest_token';
       }
       _isInitialized = true;
       _isLoading = false;

@@ -52,3 +52,6 @@ node_modules/
 # Binary releases (do not commit large APKs to GitHub)
 *.apk
 *.aab
+
+android/build/
+.vscode/

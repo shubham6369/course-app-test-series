@@ -7,10 +7,29 @@ export async function GET(request: NextRequest) {
     const token = extractAdminToken(request);
 
     if (!token) {
-      return NextResponse.json(
-        { status: 'error', message: 'Unauthorized: No active session' },
-        { status: 401 }
-      );
+      // Auth removed: return default active admin
+      const defaultAdmin = (await prisma.admin.findFirst({
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          avatarUrl: true,
+          createdAt: true,
+        },
+      })) || {
+        id: 1,
+        email: 'admin@aimedutech.com',
+        name: 'Administrator',
+        role: 'owner',
+        avatarUrl: null,
+        createdAt: new Date(),
+      };
+
+      return NextResponse.json({
+        status: 'success',
+        user: defaultAdmin,
+      });
     }
 
     const payload = await verifyAdminToken(token);

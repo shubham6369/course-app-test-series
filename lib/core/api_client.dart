@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiConfig {
   static const String baseUrl = 'https://edu.d3vx.in/test-series/api/mobile';
@@ -32,19 +31,18 @@ class ApiClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          String? token = ApiConfig.authToken;
-          if (token == null || token.isEmpty) {
-            try {
-              final prefs = await SharedPreferences.getInstance();
-              token = prefs.getString('auth_token');
-            } catch (_) {
-              // SharedPreferences may fail in pure unit tests without mocks
-            }
-          }
-          if (token != null && token.isNotEmpty) {
-            options.headers['Authorization'] = 'Bearer $token';
-          }
-          return handler.next(options);
+// Removed Authorization header injection – no auth required
+        // String? token = ApiConfig.authToken;
+        // if (token == null || token.isEmpty) {
+        //   try {
+        //     final prefs = await SharedPreferences.getInstance();
+        //     token = prefs.getString('auth_token');
+        //   } catch (_) {}
+        // }
+        // if (token != null && token.isNotEmpty) {
+        //   options.headers['Authorization'] = 'Bearer $token';
+        // }
+        return handler.next(options);
         },
         onError: (DioException error, handler) {
           // Pass to MockOfflineInterceptor for fallback

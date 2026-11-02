@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../state/auth_provider.dart';
 import '../theme.dart';
 
@@ -65,28 +64,8 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (!mounted) return;
 
-    if (authProvider.isAuthenticated) {
-      context.go('/home');
-      return;
-    }
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final hasCompletedOnboarding =
-          prefs.getBool('has_completed_onboarding') ?? false;
-
-      if (!mounted) return;
-
-      if (hasCompletedOnboarding) {
-        context.go('/login');
-      } else {
-        context.go('/onboarding');
-      }
-    } catch (e) {
-      if (mounted) {
-        context.go('/onboarding');
-      }
-    }
+    // Authentication removed: Always route directly into home dashboard
+    context.go('/home');
   }
 
   @override
