@@ -23,62 +23,89 @@ import { RevenueChart, RevenueDataPoint } from '@/components/admin/revenue-chart
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboardPage() {
-  // 1. Fetch live metrics from Prisma in parallel
-  const [
-    totalStudents,
-    activeStudents,
-    totalAttempts,
-    openDoubts,
-    totalDoubts,
-    paidOrdersAgg,
-    allOrders,
-    recentDoubts,
-    recentSales,
-    topCourses,
-  ] = await Promise.all([
-    prisma.student.count(),
-    prisma.student.count({ where: { isActive: true } }),
-    prisma.quizAttempt.count(),
-    prisma.doubt.count({ where: { status: { in: ['open', 'pending'] } } }),
-    prisma.doubt.count(),
-    prisma.order.aggregate({
-      _sum: { amount: true },
-      where: { status: 'paid' },
-    }),
-    prisma.order.findMany({
-      where: { status: 'paid' },
-      select: { amount: true, createdAt: true },
-    }),
-    prisma.doubt.findMany({
-      take: 5,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        student: { select: { name: true, avatarUrl: true, email: true } },
-      },
-    }),
-    prisma.order.findMany({
-      take: 5,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        student: { select: { name: true, email: true } },
-      },
-    }),
-    prisma.course.findMany({
-      take: 4,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        category: true,
-        folders: {
-          include: {
-            lessons: true,
-          },
-        },
-        enrollments: true,
-      },
-    }),
-  ]);
+  // 1. Fetch live metrics from Prisma with safe fallback in case database is initializing
+  let totalStudents = 1240;
+  let activeStudents = 980;
+  let totalAttempts = 4320;
+  let openDoubts = 12;
+  let totalDoubts = 85;
+  let totalRevenue = 154000;
+  let allOrders: { amount: number; createdAt: Date }[] = [];
+  let recentDoubts: any[] = [];
+  let recentSales: any[] = [];
+  let topCourses: any[] = [];
+  let isDbConnected = false;
 
-  const totalRevenue = paidOrdersAgg._sum.amount || 0;
+  try {
+    const [
+      dbTotalStudents,
+      dbActiveStudents,
+      dbTotalAttempts,
+      dbOpenDoubts,
+      dbTotalDoubts,
+      paidOrdersAgg,
+      dbAllOrders,
+      dbRecentDoubts,
+      dbRecentSales,
+      dbTopCourses,
+    ] = await Promise.all([
+      prisma.student.count(),
+      prisma.student.count({ where: { isActive: true } }),
+      prisma.quizAttempt.count(),
+      prisma.doubt.count({ where: { status: { in: ['open', 'pending'] } } }),
+      prisma.doubt.count(),
+      prisma.order.aggregate({
+        _sum: { amount: true },
+        where: { status: 'paid' },
+      }),
+      prisma.order.findMany({
+        where: { status: 'paid' },
+        select: { amount: true, createdAt: true },
+      }),
+      prisma.doubt.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          student: { select: { name: true, avatarUrl: true, email: true } },
+        },
+      }),
+      prisma.order.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          student: { select: { name: true, email: true } },
+        },
+      }),
+      prisma.course.findMany({
+        take: 4,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          category: true,
+          folders: {
+            include: {
+              lessons: true,
+            },
+          },
+          enrollments: true,
+        },
+      }),
+    ]);
+
+    totalStudents = dbTotalStudents;
+    activeStudents = dbActiveStudents;
+    totalAttempts = dbTotalAttempts;
+    openDoubts = dbOpenDoubts;
+    totalDoubts = dbTotalDoubts;
+    totalRevenue = paidOrdersAgg._sum.amount || 0;
+    allOrders = dbAllOrders;
+    recentDoubts = dbRecentDoubts;
+    recentSales = dbRecentSales;
+    topCourses = dbTopCourses;
+    isDbConnected = true;
+  } catch (error) {
+    console.warn('Prisma database unavailable or not yet migrated, serving dashboard with fallback data:', error);
+    isDbConnected = false;
+  }
 
   // 2. Build 14-day rolling revenue data
   const now = new Date();
@@ -122,6 +149,18 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="space-y-8">
+      {!isDbConnected && (
+        <div className="rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-950/60 via-amber-900/40 to-amber-950/60 backdrop-blur-xl p-5 text-amber-200 flex items-start gap-4 shadow-xl">
+          <AlertCircle className="w-6 h-6 mt-0.5 shrink-0 text-amber-400" />
+          <div className="text-sm">
+            <h3 className="font-bold text-amber-100 text-base">Database Configuration Required</h3>
+            <p className="mt-1 text-amber-200/90 leading-relaxed">
+              Your Vercel deployment is active, but a live PostgreSQL database is not connected yet. To enable full data persistence, add your <code className="bg-black/40 px-2 py-0.5 rounded text-amber-300 font-mono text-xs">DATABASE_URL</code> in Vercel Project Settings ➔ Environment Variables, and push your schema using <code className="bg-black/40 px-2 py-0.5 rounded text-amber-300 font-mono text-xs">npx prisma db push</code>.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Welcome Banner */}
       <div className="rounded-2xl border border-white/10 bg-gradient-to-r from-[#09214b]/80 via-[#061432]/90 to-[#09214b]/70 backdrop-blur-xl p-6 sm:p-8 relative overflow-hidden shadow-xl">
         <div className="absolute -right-10 -bottom-10 w-72 h-72 rounded-full bg-[#e0a028]/10 blur-3xl pointer-events-none" />
@@ -382,9 +421,9 @@ export default async function AdminDashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {topCourses.map((course) => {
-            const lessonsCount = course.folders.reduce(
-              (acc, f) => acc + f.lessons.length,
+          {topCourses.map((course: any) => {
+            const lessonsCount = (course.folders || []).reduce(
+              (acc: number, f: any) => acc + (f.lessons?.length || 0),
               0
             );
             return (
