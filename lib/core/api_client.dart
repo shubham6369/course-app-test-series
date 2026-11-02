@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiConfig {
   static const String baseUrl = 'https://edu.d3vx.in/test-series/api/mobile';
-  static bool forceOfflineMock = true; // Enabled by default for deterministic offline reliability
+  static bool forceOfflineMock = bool.fromEnvironment('OFFLINE_MOCK', defaultValue: false); // Disabled for production
   static String? authToken;
 }
 
