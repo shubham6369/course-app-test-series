@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand: #09214b;
+  --brand-light: #e0a028;
+  --brand-dark: #061432;
+  --brand-50: #eef1f6;
+  --brand-100: #dce2ea;
+  --brand-200: #b9c5d5;
+  --brand-300: #96a8c0;
+  --brand-400: #506e96;
+  --brand-500: #09214b;
+  --brand-600: #081d42;
+  --brand-700: #061432;
+  --brand-800: #040e22;
+  --brand-900: #020711;
+
+  --gold: #e0a028;
+  --gold-light: #f3c25b;
+  --gold-dark: #b87d15;
+}
+
+@layer base {
+  body {
+    background-color: #040e22;
+    color: #f1f5f9;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    overflow-x: hidden;
+  }
+}
+
+/* Custom scrollbar for dark admin dashboard */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(6, 20, 50, 0.4);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(80, 110, 150, 0.35);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(224, 160, 40, 0.5);
+}
+
+/* Ambient Radial Canvas */
+.admin-ambient-canvas {
+  background-color: #040e22;
+  background-image: 
+    radial-gradient(60rem 40rem at 110% -10%, rgba(9, 33, 75, 0.7), transparent 60%),
+    radial-gradient(45rem 35rem at -10% 40%, rgba(6, 20, 50, 0.9), transparent 60%),
+    radial-gradient(50rem 30rem at 85% 95%, rgba(224, 160, 40, 0.08), transparent 50%);
+  background-attachment: fixed;
+}
+
+.glass-card {
+  background: rgba(9, 33, 75, 0.35);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card-hover {
+  transition: all 0.2s ease-in-out;
+}
+
+.glass-card-hover:hover {
+  border-color: rgba(224, 160, 40, 0.3);
+  transform: translateY(-1px);
+}

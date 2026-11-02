@@ -1,0 +1,425 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Admin {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String   // Hashed with bcrypt or secure string
+  name      String
+  role      String   @default("staff") // "owner" | "admin" | "staff" | "teacher"
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Student {
+  id               Int                @id @default(autoincrement())
+  name             String
+  email            String             @unique
+  phone            String             @unique
+  password         String
+  avatarUrl        String?
+  classId          String?            // e.g. "Class 12"
+  targetExam       String?            // e.g. "NEET 2026"
+  isActive         Boolean            @default(true)
+  token            String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  enrollments      Enrollment[]
+  quizAttempts     QuizAttempt[]
+  doubts           Doubt[]
+  videoComments    VideoComment[]
+  communityPosts   CommunityPost[]
+  communityLikes   CommunityLike[]
+  communityComments CommunityComment[]
+  orders           Order[]
+  deletionRequests DeletionRequest[]
+}
+
+model Category {
+  id         Int          @id @default(autoincrement())
+  name       String       @unique
+  icon       String       @default("school")
+  color      Int          @default(10619899) // 0xFF00897B
+  order      Int          @default(0)
+  createdAt  DateTime     @default(now())
+
+  courses    Course[]
+  testSeries TestSeries[]
+}
+
+model Course {
+  id                   Int            @id @default(autoincrement())
+  title                String
+  slug                 String         @unique
+  description          String?
+  thumbnailUrl         String?
+  price                Float          @default(0.0)
+  discountPrice        Float?
+  instructorName       String?
+  categoryId           Int?
+  category             Category?      @relation(fields: [categoryId], references: [id])
+  validityDays         Int            @default(365)
+  isPublished          Boolean        @default(true)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  folders              CourseFolder[]
+  enrollments          Enrollment[]
+  orders               Order[]
+}
+
+model CourseFolder {
+  id        Int      @id @default(autoincrement())
+  courseId  Int
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title     String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  lessons   Lesson[]
+}
+
+model Lesson {
+  id              Int            @id @default(autoincrement())
+  folderId        Int
+  folder          CourseFolder   @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  videoId         String         // YouTube ID or stream URL
+  durationMinutes Int            @default(0)
+  isFreePreview   Boolean        @default(false)
+  order           Int            @default(0)
+  pdfUrl          String?
+  createdAt       DateTime       @default(now())
+
+  comments        VideoComment[]
+}
+
+model VideoComment {
+  id             Int      @id @default(autoincrement())
+  lessonId       Int
+  lesson         Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  studentId      Int?
+  student        Student? @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  studentName    String
+  studentAvatar  String?
+  comment        String
+  likesCount     Int      @default(0)
+  isTeacherReply Boolean  @default(false)
+  videoId        String?
+  createdAt      DateTime @default(now())
+}
+
+model TestSeries {
+  id            Int          @id @default(autoincrement())
+  title         String
+  description   String?
+  categoryId    Int?
+  category      Category?    @relation(fields: [categoryId], references: [id])
+  thumbnailUrl  String?
+  price         Float        @default(0.0)
+  discountPrice Float?
+  validityDays  Int          @default(365)
+  isPublished   Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  quizzes       Quiz[]
+  enrollments   Enrollment[]
+  orders        Order[]
+}
+
+model Quiz {
+  id              Int           @id @default(autoincrement())
+  testSeriesId    Int?
+  testSeries      TestSeries?   @relation(fields: [testSeriesId], references: [id], onDelete: Cascade)
+  title           String
+  subject         String?
+  durationMinutes Int           @default(60)
+  totalMarks      Float         @default(40.0)
+  negativeMarks   Float         @default(1.0)
+  passingMarks    Float         @default(16.0)
+  isFree          Boolean       @default(false)
+  isLocked        Boolean       @default(false)
+  maxAttempts     Int           @default(3)
+  instructions    String?       // JSON array string
+  isPublished     Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+
+  questions       Question[]
+  attempts        QuizAttempt[]
+}
+
+model Question {
+  id               Int      @id @default(autoincrement())
+  quizId           Int
+  quiz             Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  questionNumber   Int      @default(1)
+  questionText     String
+  questionImageUrl String?
+  options          String   // JSON array of strings
+  optionImages     String?  // JSON array of string | null
+  correctOption    Int      // 0-indexed integer
+  explanation      String?
+  subject          String?
+  topic            String?
+  marks            Float    @default(4.0)
+  negativeMarks    Float    @default(1.0)
+  createdAt        DateTime @default(now())
+}
+
+model QuizAttempt {
+  id                Int      @id @default(autoincrement())
+  quizId            Int
+  quiz              Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  studentId         Int
+  student           Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  score             Float
+  totalMarks        Float
+  correctAnswers    Int
+  incorrectAnswers  Int
+  unattempted       Int
+  accuracy          Float
+  timeTakenSeconds  Int
+  rank              Int      @default(1)
+  totalParticipants Int      @default(1)
+  percentile        Float    @default(100.0)
+  isPassed          Boolean  @default(true)
+  certificateUrl    String?
+  answers           String   // JSON object: { [questionId: string]: number }
+  createdAt         DateTime @default(now())
+}
+
+model Doubt {
+  id            Int          @id @default(autoincrement())
+  studentId     Int
+  student       Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentName   String
+  studentAvatar String?
+  subject       String
+  question      String
+  imageUrl      String?
+  status        String       @default("pending") // "pending" | "open" | "solved" | "closed"
+  createdAt     DateTime     @default(now())
+
+  replies       DoubtReply[]
+}
+
+model DoubtReply {
+  id           Int      @id @default(autoincrement())
+  doubtId      Int
+  doubt        Doubt    @relation(fields: [doubtId], references: [id], onDelete: Cascade)
+  authorId     Int
+  authorName   String
+  authorAvatar String?
+  authorType   String   @default("teacher") // "teacher" | "student" | "staff"
+  message      String
+  imageUrl     String?
+  createdAt    DateTime @default(now())
+}
+
+model CommunityPost {
+  id           Int                @id @default(autoincrement())
+  authorId     Int
+  author       Student            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorName   String
+  authorAvatar String?
+  content      String
+  imageUrl     String?
+  likeCount    Int                @default(0)
+  replyCount   Int                @default(0)
+  isPinned     Boolean            @default(false)
+  createdAt    DateTime           @default(now())
+
+  likes        CommunityLike[]
+  comments     CommunityComment[]
+}
+
+model CommunityLike {
+  id        Int           @id @default(autoincrement())
+  postId    Int
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  studentId Int
+  student   Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+
+  @@unique([postId, studentId])
+}
+
+model CommunityComment {
+  id           Int           @id @default(autoincrement())
+  postId       Int
+  post         CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  studentId    Int
+  student      Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  authorName   String
+  authorAvatar String?
+  comment      String
+  createdAt    DateTime      @default(now())
+}
+
+model Banner {
+  id          Int      @id @default(autoincrement())
+  title       String
+  subtitle    String?
+  imageUrl    String
+  actionType  String?  // "test_series" | "course" | "ai_chat" | "url"
+  actionValue String?
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model Ebook {
+  id          Int      @id @default(autoincrement())
+  title       String
+  author      String?
+  description String?
+  coverUrl    String?
+  pdfUrl      String
+  pageCount   Int      @default(0)
+  fileSize    String   @default("0 MB")
+  isFree      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model Resource {
+  id        Int      @id @default(autoincrement())
+  title     String
+  type      String   @default("pdf")
+  fileUrl   String
+  fileSize  String   @default("0 MB")
+  createdAt DateTime @default(now())
+}
+
+model LiveClass {
+  id              Int      @id @default(autoincrement())
+  title           String
+  subject         String
+  instructorName  String
+  thumbnailUrl    String?
+  scheduledAt     DateTime
+  durationMinutes Int      @default(60)
+  status          String   @default("upcoming") // "upcoming" | "live" | "completed"
+  streamUrl       String?
+  createdAt       DateTime @default(now())
+}
+
+model Order {
+  id                 Int         @id @default(autoincrement())
+  orderNumber        String      @unique // e.g. "order_edu_1730000000"
+  studentId          Int
+  student            Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  itemType           String      // "course" | "test_series"
+  itemId             Int
+  courseId           Int?
+  course             Course?     @relation(fields: [courseId], references: [id])
+  testSeriesId       Int?
+  testSeries         TestSeries? @relation(fields: [testSeriesId], references: [id])
+  itemName           String
+  amount             Float
+  currency           String      @default("INR")
+  razorpayOrderId    String?
+  razorpayPaymentId  String?
+  razorpaySignature  String?
+  status             String      @default("pending") // "pending" | "paid" | "failed"
+  couponCode         String?
+  discountAmount     Float       @default(0.0)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+}
+
+model Enrollment {
+  id           Int         @id @default(autoincrement())
+  studentId    Int
+  student      Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  itemType     String      // "course" | "test_series"
+  itemId       Int
+  courseId     Int?
+  course       Course?     @relation(fields: [courseId], references: [id])
+  testSeriesId Int?
+  testSeries   TestSeries? @relation(fields: [testSeriesId], references: [id])
+  validUntil   DateTime
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+
+  @@unique([studentId, itemType, itemId])
+}
+
+model Coupon {
+  id             Int       @id @default(autoincrement())
+  code           String    @unique // e.g. "FLAT50"
+  discountType   String    @default("percentage") // "percentage" | "fixed"
+  discountValue  Float
+  minOrderAmount Float     @default(0.0)
+  maxDiscount    Float?
+  validUntil     DateTime?
+  usageLimit     Int?
+  usedCount      Int       @default(0)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+}
+
+model Announcement {
+  id             Int      @id @default(autoincrement())
+  title          String
+  content        String
+  targetAudience String   @default("all") // "all" | "course" | "test_series"
+  targetId       Int?
+  isPublished    Boolean  @default(true)
+  createdAt      DateTime @default(now())
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  studentId Int?     // null indicates broadcast to all students
+  title     String
+  body      String
+  actionUrl String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model DeletionRequest {
+  id          Int       @id @default(autoincrement())
+  studentId   Int
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  reason      String?
+  status      String    @default("pending") // "pending" | "approved" | "rejected"
+  requestedAt DateTime  @default(now())
+  resolvedAt  DateTime?
+}
+
+model Setting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  category  String   @default("general") // "general" | "branding" | "razorpay" | "ai"
+  updatedAt DateTime @updatedAt
+}
+
+model AiConfig {
+  id           Int      @id @default(autoincrement())
+  systemPrompt String
+  model        String   @default("gpt-4o-mini")
+  temperature  Float    @default(0.7)
+  maxTokens    Int      @default(1000)
+  updatedAt    DateTime @updatedAt
+}
+
+model AiAuditLog {
+  id          Int      @id @default(autoincrement())
+  studentId   Int?
+  query       String
+  response    String
+  suggestions String?  // JSON array string
+  createdAt   DateTime @default(now())
+}
