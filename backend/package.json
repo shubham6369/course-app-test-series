@@ -16,13 +16,17 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.2.0",
+    "@prisma/adapter-neon": "^7.10.1",
     "@prisma/client": "^6.2.1",
+    "@types/ws": "^8.18.2",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.473.0",
     "next": "^15.1.4",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "ws": "^8.22.1"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

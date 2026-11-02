@@ -1,10 +1,11 @@
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url = env("DATABASE_URL")
 }
 
 generator client {
   provider = "prisma-client-js"
+  
 }
 
 model Admin {
@@ -199,227 +200,68 @@ model QuizAttempt {
 }
 
 model Doubt {
-  id            Int          @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
   studentId     Int
-  student       Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   studentName   String
-  studentAvatar String?
-  subject       String
   question      String
-  imageUrl      String?
-  status        String       @default("pending") // "pending" | "open" | "solved" | "closed"
-  createdAt     DateTime     @default(now())
-
-  replies       DoubtReply[]
-}
-
-model DoubtReply {
-  id           Int      @id @default(autoincrement())
-  doubtId      Int
-  doubt        Doubt    @relation(fields: [doubtId], references: [id], onDelete: Cascade)
-  authorId     Int
-  authorName   String
-  authorAvatar String?
-  authorType   String   @default("teacher") // "teacher" | "student" | "staff"
-  message      String
-  imageUrl     String?
-  createdAt    DateTime @default(now())
-}
-
-model CommunityPost {
-  id           Int                @id @default(autoincrement())
-  authorId     Int
-  author       Student            @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  authorName   String
-  authorAvatar String?
-  content      String
-  imageUrl     String?
-  likeCount    Int                @default(0)
-  replyCount   Int                @default(0)
-  isPinned     Boolean            @default(false)
-  createdAt    DateTime           @default(now())
-
-  likes        CommunityLike[]
-  comments     CommunityComment[]
-}
-
-model CommunityLike {
-  id        Int           @id @default(autoincrement())
-  postId    Int
-  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  studentId Int
-  student   Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  createdAt DateTime      @default(now())
-
-  @@unique([postId, studentId])
-}
-
-model CommunityComment {
-  id           Int           @id @default(autoincrement())
-  postId       Int
-  post         CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  studentId    Int
-  student      Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  authorName   String
-  authorAvatar String?
-  comment      String
-  createdAt    DateTime      @default(now())
-}
-
-model Banner {
-  id          Int      @id @default(autoincrement())
-  title       String
-  subtitle    String?
-  imageUrl    String
-  actionType  String?  // "test_series" | "course" | "ai_chat" | "url"
-  actionValue String?
-  order       Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-}
-
-model Ebook {
-  id          Int      @id @default(autoincrement())
-  title       String
-  author      String?
-  description String?
-  coverUrl    String?
-  pdfUrl      String
-  pageCount   Int      @default(0)
-  fileSize    String   @default("0 MB")
-  isFree      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-}
-
-model Resource {
-  id        Int      @id @default(autoincrement())
-  title     String
-  type      String   @default("pdf")
-  fileUrl   String
-  fileSize  String   @default("0 MB")
-  createdAt DateTime @default(now())
-}
-
-model LiveClass {
-  id              Int      @id @default(autoincrement())
-  title           String
-  subject         String
-  instructorName  String
-  thumbnailUrl    String?
-  scheduledAt     DateTime
-  durationMinutes Int      @default(60)
-  status          String   @default("upcoming") // "upcoming" | "live" | "completed"
-  streamUrl       String?
-  createdAt       DateTime @default(now())
-}
-
-model Order {
-  id                 Int         @id @default(autoincrement())
-  orderNumber        String      @unique // e.g. "order_edu_1730000000"
-  studentId          Int
-  student            Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  itemType           String      // "course" | "test_series"
-  itemId             Int
-  courseId           Int?
-  course             Course?     @relation(fields: [courseId], references: [id])
-  testSeriesId       Int?
-  testSeries         TestSeries? @relation(fields: [testSeriesId], references: [id])
-  itemName           String
-  amount             Float
-  currency           String      @default("INR")
-  razorpayOrderId    String?
-  razorpayPaymentId  String?
-  razorpaySignature  String?
-  status             String      @default("pending") // "pending" | "paid" | "failed"
-  couponCode         String?
-  discountAmount     Float       @default(0.0)
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
+  createdAt     DateTime @default(now())
 }
 
 model Enrollment {
-  id           Int         @id @default(autoincrement())
-  studentId    Int
-  student      Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  itemType     String      // "course" | "test_series"
-  itemId       Int
-  courseId     Int?
-  course       Course?     @relation(fields: [courseId], references: [id])
+  id          Int      @id @default(autoincrement())
+  studentId   Int
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseId    Int?
+  course      Course?   @relation(fields: [courseId], references: [id])
   testSeriesId Int?
   testSeries   TestSeries? @relation(fields: [testSeriesId], references: [id])
-  validUntil   DateTime
-  isActive     Boolean     @default(true)
-  createdAt    DateTime    @default(now())
-
-  @@unique([studentId, itemType, itemId])
+  createdAt   DateTime @default(now())
 }
 
-model Coupon {
-  id             Int       @id @default(autoincrement())
-  code           String    @unique // e.g. "FLAT50"
-  discountType   String    @default("percentage") // "percentage" | "fixed"
-  discountValue  Float
-  minOrderAmount Float     @default(0.0)
-  maxDiscount    Float?
-  validUntil     DateTime?
-  usageLimit     Int?
-  usedCount      Int       @default(0)
-  isActive       Boolean   @default(true)
-  createdAt      DateTime  @default(now())
+model Order {
+  id          Int      @id @default(autoincrement())
+  studentId   Int
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  courseId    Int?
+  course      Course?   @relation(fields: [courseId], references: [id])
+  testSeriesId Int?
+  testSeries   TestSeries? @relation(fields: [testSeriesId], references: [id])
+  amount      Float    @default(0.0)
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
 }
 
-model Announcement {
-  id             Int      @id @default(autoincrement())
-  title          String
-  content        String
-  targetAudience String   @default("all") // "all" | "course" | "test_series"
-  targetId       Int?
-  isPublished    Boolean  @default(true)
-  createdAt      DateTime @default(now())
+model CommunityPost {
+  id          Int      @id @default(autoincrement())
+  authorId    Int
+  author      Student   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content     String
+  createdAt   DateTime @default(now())
 }
 
-model Notification {
-  id        Int      @id @default(autoincrement())
-  studentId Int?     // null indicates broadcast to all students
-  title     String
-  body      String
-  actionUrl String?
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+model CommunityComment {
+  id          Int      @id @default(autoincrement())
+  postId      Int
+  post        CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId    Int
+  author      Student   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content     String
+  createdAt   DateTime @default(now())
+}
+
+model CommunityLike {
+  id          Int      @id @default(autoincrement())
+  postId      Int
+  post        CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId      Int
+  user        Student   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model DeletionRequest {
-  id          Int       @id @default(autoincrement())
-  studentId   Int
-  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  reason      String?
-  status      String    @default("pending") // "pending" | "approved" | "rejected"
-  requestedAt DateTime  @default(now())
-  resolvedAt  DateTime?
-}
-
-model Setting {
-  id        Int      @id @default(autoincrement())
-  key       String   @unique
-  value     String
-  category  String   @default("general") // "general" | "branding" | "razorpay" | "ai"
-  updatedAt DateTime @updatedAt
-}
-
-model AiConfig {
-  id           Int      @id @default(autoincrement())
-  systemPrompt String
-  model        String   @default("gpt-4o-mini")
-  temperature  Float    @default(0.7)
-  maxTokens    Int      @default(1000)
-  updatedAt    DateTime @updatedAt
-}
-
-model AiAuditLog {
   id          Int      @id @default(autoincrement())
-  studentId   Int?
-  query       String
-  response    String
-  suggestions String?  // JSON array string
+  userId      Int
+  user        Student   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reason      String
   createdAt   DateTime @default(now())
 }
